@@ -1,59 +1,21 @@
-import Data.Array
+import PairFunctions
+import Programs
+import Data.List
+    
+encodeList :: [Int] -> Int
+encodeList = foldr encodeDoublePair 0
 
-data Instruction = I Int Int|
-                   D Int Int Int|
-                   H
-    deriving (Eq)
-
-instance Show Instruction where
-    show H          = "HALT"
-    show (I r l)    = "R" ++ show r ++ "+ -> L" ++ show l
-    show (D r l l') = "R" ++ show r ++ "- -> L" ++ show l ++ ", L" ++ show l'
-
-fromDoubleArrowPair :: Int -> Int -> Int
-fromDoubleArrowPair x y = (2 ^ x) * (2 * y + 1)
-
-fromSingleArrowPair :: Int -> Int -> Int
-fromSingleArrowPair x y = ((2 ^ x) * (2 * y + 1)) - 1
-
-toDoubleArrowPair :: Int -> (Int, Int)
-toDoubleArrowPair p = (x, y)
+decodeList :: Int -> [Int]
+decodeList = unfoldr decoding
   where
-    x = multiplesOfTwo p
-    y = ((p `div` (2 ^ x)) - 1) `div` 2
+    decoding 0 = Nothing
+    decoding n = Just (decodeDoublePair n)
 
-toSingleArrowPair :: Int -> (Int, Int)
-toSingleArrowPair p = (x, y)
-  where
-    q = p + 1
-    x = multiplesOfTwo q
-    y = ((q `div` (2 ^ x)) - 1) `div` 2
-
-multiplesOfTwo :: Int -> Int
-multiplesOfTwo a
-  | even a    = 1 + multiplesOfTwo (a `div` 2)
-  | otherwise = 0
-
-decodeInstruction :: Int -> Instruction
-decodeInstruction 0 = H
-decodeInstruction i
-  | even x    = I (x `div` 2) y
-  | otherwise = D ((x - 1) `div` 2) j k
-    where
-      (x, y) = toDoubleArrowPair i
-      (j, k) = toSingleArrowPair y
-
-decodeInt :: Int -> [Int]
-decodeInt 0 = []
-decodeInt l = x : decodeInt y
-  where
-    (x, y) = toDoubleArrowPair l
-
-decodeList :: [Int] -> [Instruction]
-decodeList = map decodeInstruction
+decodeInstructions :: [Int] -> [Instruction]
+decodeInstructions = map decodeInstruction
 
 decode :: Int -> [Instruction]
-decode = decodeList . decodeInt
+decode = decodeInstructions . decodeList
 
 printDecode :: Int -> IO ()
 printDecode i = mapM_ print (decode i)
