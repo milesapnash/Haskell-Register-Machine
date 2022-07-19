@@ -1,24 +1,22 @@
 import PairFunctions
 import Programs
 import Data.List
+import Data.Array
     
-encodeList :: [Int] -> Int
+encodeList :: [Integer] -> Integer
 encodeList = foldr encodeDoublePair 0
 
-decodeList :: Int -> [Int]
+decodeList :: Integer -> [Integer]
 decodeList = unfoldr decoding
   where
     decoding 0 = Nothing
     decoding n = Just (decodeDoublePair n)
 
-decodeInstructions :: [Int] -> [Instruction]
-decodeInstructions = map decodeInstruction
+decodeInstructions :: [Integer] -> Program
+decodeInstructions = fromInstructions . map decodeInstruction
 
-decode :: Int -> [Instruction]
+decode :: Integer -> Program
 decode = decodeInstructions . decodeList
-
-printDecode :: Int -> IO ()
-printDecode i = mapM_ print (decode i)
 
 increment :: Int -> Int -> [Int] -> [Int]
 increment r l s = s''
@@ -45,24 +43,33 @@ executeInstruction H s          = halt s
 executeInstruction (I r l) s    = increment r l s
 executeInstruction (D r l l') s = decrement r l l' s
 
-executeInstructions :: [Instruction] -> [Int] -> [Int]
-executeInstructions instrs s
-  | l > -1 && l < length instrs = executeInstructions instrs (executeInstruction x s)
-  | otherwise                   = s
+executeInstructions :: Program -> [Int] -> [Int]
+executeInstructions p@(Program xs) s
+  | l > -1 && l < length xs = executeInstructions p (executeInstruction x s)
+  | otherwise               = s
     where
       l = head s
-      x = instrs !! l
+      x = xs ! l
 
-execute :: Int -> [Int] -> [Int]
+execute :: Integer -> [Int] -> [Int]
 execute p = executeInstructions (decode p)
 
-executeInstructionsTrace :: [Instruction] -> [Int] -> [(Instruction, [Int])]
-executeInstructionsTrace instrs s
-  | l > -1 && l < length instrs = (x, s) : executeInstructionsTrace instrs (executeInstruction x s)
-  | otherwise                   = [(H, s)]
+executeInstructionsTrace :: Program -> [Int] -> [(Instruction, [Int])]
+executeInstructionsTrace p@(Program xs) s
+  | l > -1 && l < length xs = (x, s) : executeInstructionsTrace p (executeInstruction x s)
+  | otherwise               = [(H, s)]
     where
       l = head s
-      x = instrs !! l
+      x = xs ! l
 
-executeTrace :: Int -> [Int] -> IO ()
-executeTrace p s = mapM_ print (executeInstructionsTrace (decode p) s)
+executeTrace :: Integer -> [Int] -> IO ()
+executeTrace p s = mapM_ print (executeInstructionsTrace d (checkState d s))
+  where
+    d = decode p
+
+checkState :: Program -> [Int] -> [Int]
+checkState p s 
+ | length s > n = take n s
+ | otherwise    = s
+ where
+  n = noRegisters p

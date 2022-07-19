@@ -1,10 +1,12 @@
 module Programs where
 
 import PairFunctions
+import Data.Foldable
+import Data.Array
 
-data Instruction = I Int Int|
-                   D Int Int Int|
-                   H
+data Instruction = H |
+                   I Int Int |
+                   D Int Int Int
   deriving Eq
 
 instance Show Instruction where
@@ -18,18 +20,30 @@ newtype Program = Program (Array Int Instruction)
 instance Show Program where
   show (Program a)
     | null a    = "NULL"
-    | otherwise = "PROGRAMMER"
-   
-decodeInstruction :: Int -> Instruction
+    | otherwise = "PROGRAM:" ++ concatMap (\(i, l) -> "\nL" ++ show i ++ ":\t" ++ show l) (zip [0..] (toList a))
+
+decodeInstruction :: Integer -> Instruction
 decodeInstruction 0 = H
 decodeInstruction i
   | even x    = I (x `div` 2) y
   | otherwise = D ((x - 1) `div` 2) j k
     where
-      (x, y) = decodeDoublePair i
+      (x, y) = decodeDoublePair (fromIntegral i)
       (j, k) = decodeSinglePair y
       
-encodeInstruction :: Instruction -> Int
+encodeInstruction :: Instruction -> Integer
 encodeInstruction H = 0
 encodeInstruction (I r l)   = encodeDoublePair (2 * fromIntegral r) (fromIntegral l)
-encodeInstruction (D r l b) = encodeDoublePair (2 * fromIntegral r + 1) (encodeSinglePair (fromIntegral l) (fromIntegral b))
+encodeInstruction (D r l l') = encodeDoublePair (2 * fromIntegral r + 1) (encodeSinglePair (fromIntegral l) (fromIntegral l'))
+
+fromInstructions :: [Instruction] -> Program
+fromInstructions is = Program (array bnds [(i, is !! i) | i <- range bnds])
+  where
+    bnds = (0, length is - 1)
+
+noRegisters :: Program -> Int
+noRegisters (Program p) = 2 + foldr max 0 (fmap registers p)
+  where
+    registers H = 0
+    registers (I r _) = r
+    registers (D r _ _) = r
