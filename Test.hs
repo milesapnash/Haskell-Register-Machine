@@ -19,17 +19,11 @@ assert name expected actual
 
 -- QuickCheck helpers
 
-newtype NonNeg = NonNeg Integer deriving Show
+newtype SmallNat = SmallNat Integer deriving Show
 
-instance Arbitrary NonNeg where
-  arbitrary = NonNeg . abs <$> arbitrary
-  shrink (NonNeg n) = [NonNeg n' | n' <- shrink n, n' >= 0]
-
-newtype Positive' = Positive' Integer deriving Show
-
-instance Arbitrary Positive' where
-  arbitrary = Positive' . (+ 1) . abs <$> arbitrary
-  shrink (Positive' n) = [Positive' n' | n' <- shrink n, n' >= 1]
+instance Arbitrary SmallNat where
+  arbitrary = SmallNat . toInteger <$> chooseInt (0, 20)
+  shrink (SmallNat n) = [SmallNat n' | n' <- shrink n, n' >= 0]
 
 instance Arbitrary Instruction where
   arbitrary = oneof
@@ -44,25 +38,25 @@ instance Arbitrary Instruction where
 
 -- Properties
 
-prop_doublePairRoundtrip :: NonNeg -> NonNeg -> Bool
-prop_doublePairRoundtrip (NonNeg x) (NonNeg y) =
+prop_doublePairRoundtrip :: SmallNat -> SmallNat -> Bool
+prop_doublePairRoundtrip (SmallNat x) (SmallNat y) =
   decodeDoublePair (encodeDoublePair x y) == (x, y)
 
-prop_singlePairRoundtrip :: NonNeg -> NonNeg -> Bool
-prop_singlePairRoundtrip (NonNeg x) (NonNeg y) =
+prop_singlePairRoundtrip :: SmallNat -> SmallNat -> Bool
+prop_singlePairRoundtrip (SmallNat x) (SmallNat y) =
   decodeSinglePair (encodeSinglePair x y) == (x, y)
 
 prop_instructionRoundtrip :: Instruction -> Bool
 prop_instructionRoundtrip i =
   decodeInstruction (encodeInstruction i) == i
 
-prop_listRoundtrip :: [NonNeg] -> Bool
+prop_listRoundtrip :: [SmallNat] -> Bool
 prop_listRoundtrip ns =
-  let xs = map (\(NonNeg n) -> n) ns
+  let xs = map (\(SmallNat n) -> n) ns
   in decodeList (encodeList xs) == xs
 
-prop_programRoundtrip :: [Instruction] -> Property
-prop_programRoundtrip is = not (null is) ==>
+prop_programRoundtrip :: NonEmptyList Instruction -> Bool
+prop_programRoundtrip (NonEmpty is) =
   let p = fromInstructions is
   in decode (encode p) == p
 
