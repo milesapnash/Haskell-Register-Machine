@@ -11,16 +11,21 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
-    ("run" : "--trace" : file : regs) -> run True file (map read regs)
-    ("run" : file : regs)             -> run False file (map read regs)
-    ["encode", file]                  -> encodeFile file
-    ["decode", n]                     -> decodeNum (read n)
-    _                                 -> usage
+    ("run" : rest)   -> parseAndRun rest False 1000000
+    ["encode", file] -> encodeFile file
+    ["decode", n]    -> decodeNum (read n)
+    _                -> usage
+
+parseAndRun :: [String] -> Bool -> Int -> IO ()
+parseAndRun ("--trace" : rest) _ ms     = parseAndRun rest True ms
+parseAndRun ("--max-steps" : n : rest) t _ = parseAndRun rest t (read n)
+parseAndRun (file : regs) trace maxSteps   = run trace maxSteps file (map read regs)
+parseAndRun _ _ _                          = usage
 
 usage :: IO ()
 usage = do
   hPutStrLn stderr "Usage:"
-  hPutStrLn stderr "  rm-sim run [--trace] <file> [r0 r1 ...]"
+  hPutStrLn stderr "  rm-sim run [--trace] [--max-steps N] <file> [r0 r1 ...]"
   hPutStrLn stderr "  rm-sim encode <file>"
   hPutStrLn stderr "  rm-sim decode <integer>"
   exitFailure
@@ -32,13 +37,17 @@ loadProgram file = do
     Left err   -> hPutStrLn stderr err >> exitFailure
     Right prog -> return prog
 
-run :: Bool -> FilePath -> [Int] -> IO ()
-run trace file regs = do
+run :: Bool -> Int -> FilePath -> [Int] -> IO ()
+run trace maxSteps file regs = do
   prog <- loadProgram file
   let state = checkState prog (0 : regs)
   if trace
-    then mapM_ print (executeInstructionsTrace prog state)
-    else putStrLn $ "Registers: " ++ show (tail (executeInstructions prog state))
+    then mapM_ print (take maxSteps (executeInstructionsTrace prog state))
+    else do
+      let (halted, result) = executeWithLimit maxSteps prog state
+      putStrLn $ "Registers: " ++ show (tail result)
+      if halted then return ()
+      else hPutStrLn stderr $ "Warning: step limit (" ++ show maxSteps ++ ") reached, program may not have terminated"
 
 encodeFile :: FilePath -> IO ()
 encodeFile file = do

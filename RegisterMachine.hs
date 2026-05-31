@@ -49,6 +49,15 @@ executeInstructions p@(Program xs) s
       l = head s
       x = xs ! l
 
+executeWithLimit :: Int -> Program -> [Int] -> (Bool, [Int])
+executeWithLimit 0 _ s = (False, s)
+executeWithLimit n p@(Program xs) s
+  | inRange (bounds xs) l = executeWithLimit (n - 1) p (executeInstruction x s)
+  | otherwise             = (True, s)
+    where
+      l = head s
+      x = xs ! l
+
 execute :: Integer -> [Int] -> [Int]
 execute p = executeInstructions (decode p)
 
