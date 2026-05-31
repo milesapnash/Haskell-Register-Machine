@@ -1,7 +1,6 @@
 module Programs where
 
 import Pairing
-import Data.Foldable
 import Data.Array
 
 data Instruction = H |
@@ -20,7 +19,7 @@ newtype Program = Program (Array Int Instruction)
 instance Show Program where
   show (Program a)
     | null a    = "NULL"
-    | otherwise = "PROGRAM:" ++ concatMap (\(i, l) -> "\nL" ++ show i ++ ":\t" ++ show l) (zip [0..] (toList a))
+    | otherwise = "PROGRAM:" ++ concatMap (\(i, l) -> "\nL" ++ show i ++ ":\t" ++ show l) (assocs a)
 
 decodeInstruction :: Integer -> Instruction
 decodeInstruction 0 = H
@@ -37,7 +36,7 @@ encodeInstruction (I r l)   = encodeDoublePair (2 * fromIntegral r) (fromIntegra
 encodeInstruction (D r l l') = encodeDoublePair (2 * fromIntegral r + 1) (encodeSinglePair (fromIntegral l) (fromIntegral l'))
 
 toInstructions :: Program -> [Instruction]
-toInstructions (Program a) = toList a
+toInstructions (Program a) = elems a
 
 fromInstructions :: [Instruction] -> Program
 fromInstructions is = Program (listArray (0, length is - 1) is)
