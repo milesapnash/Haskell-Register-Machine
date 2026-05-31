@@ -60,6 +60,44 @@ prop_programRoundtrip = forAll (resize 10 (listOf1 arbitrary)) $ \is ->
   let p = fromInstructions is
   in decode (encode p) == p
 
+-- Execution properties
+
+prop_haltPreservesRegisters :: Property
+prop_haltPreservesRegisters = forAll (resize 10 (listOf1 arbitrary)) $ \ns ->
+  let regs = map (\(SmallNat n) -> fromIntegral n) ns
+      result = executeInstructions (fromInstructions [H]) (0 : regs)
+  in tail result === regs
+
+prop_incrementAdds :: Property
+prop_incrementAdds = forAll (chooseInt (0, 3)) $ \r ->
+  forAll (vectorOf (r + 1) (chooseInt (0, 16))) $ \regs ->
+    let prog     = fromInstructions [I r 1, H]
+        result   = executeInstructions prog (0 : regs)
+        expected = take r regs ++ [regs !! r + 1] ++ drop (r + 1) regs
+    in tail result === expected
+
+prop_decrementBranches :: Property
+prop_decrementBranches = forAll (chooseInt (0, 16)) $ \v ->
+  let prog   = fromInstructions [D 0 1 2, I 1 3, I 2 3, H]
+      result = executeInstructions prog [0, v, 0, 0]
+  in if v > 0
+     then (result !! 2 === 1) .&&. (result !! 3 === 0)
+     else (result !! 2 === 0) .&&. (result !! 3 === 1)
+
+prop_incDecIdentity :: Property
+prop_incDecIdentity = forAll (chooseInt (0, 3)) $ \r ->
+  forAll (vectorOf (r + 1) (chooseInt (0, 16))) $ \regs ->
+    let prog   = fromInstructions [I r 1, D r 2 2, H]
+        result = executeInstructions prog (0 : regs)
+    in tail result === regs
+
+prop_addition :: SmallNat -> SmallNat -> Property
+prop_addition (SmallNat a) (SmallNat b) =
+  let prog   = fromInstructions [D 1 1 2, I 0 0, H]
+      result = executeInstructions prog [0, fromIntegral a, fromIntegral b]
+  in (result !! 1 === fromIntegral (a + b))
+  .&&. (result !! 2 === 0)
+
 -- Runner
 
 check :: String -> Property -> IO ()
@@ -83,5 +121,12 @@ main = do
   check "instruction roundtrip" (property prop_instructionRoundtrip)
   check "list roundtrip" (property prop_listRoundtrip)
   check "program roundtrip" (property prop_programRoundtrip)
+
+  -- Execution properties
+  check "halt preserves registers"     prop_haltPreservesRegisters
+  check "increment adds one"           prop_incrementAdds
+  check "decrement branches correctly" prop_decrementBranches
+  check "inc then dec is identity"     prop_incDecIdentity
+  check "addition program"             (property prop_addition)
 
   putStrLn "All tests passed."
