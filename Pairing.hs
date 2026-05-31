@@ -1,9 +1,10 @@
-module PairFunctions where
+module Pairing where
 
 encodeDoublePair :: (Integral a) => a -> a -> a
 encodeDoublePair x y = (2 ^ x) * (2 * y + 1)
 
 decodeDoublePair :: (Integral a) => a -> (a, a)
+decodeDoublePair 0 = error "decodeDoublePair: 0 is not in the range of encodeDoublePair"
 decodeDoublePair p
   | m == 1    = (0, fromIntegral d)
   | otherwise = (x + 1, y)

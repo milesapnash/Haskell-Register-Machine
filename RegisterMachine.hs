@@ -1,4 +1,6 @@
-import PairFunctions
+module RegisterMachine where
+
+import Pairing
 import Programs
 import Data.List
 import Data.Array
@@ -17,6 +19,9 @@ decodeInstructions = fromInstructions . map decodeInstruction
 
 decode :: Integer -> Program
 decode = decodeInstructions . decodeList
+
+encode :: Program -> Integer
+encode = encodeList . map encodeInstruction . toInstructions
 
 increment :: Int -> Int -> [Int] -> [Int]
 increment r l s = s''
@@ -72,4 +77,4 @@ checkState p s
  | length s > n = take n s
  | otherwise    = s
  where
-  n = noRegisters p
+  n = numRegisters p
