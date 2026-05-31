@@ -31,7 +31,7 @@ instance Arbitrary Instruction where
     , I <$> small <*> small
     , D <$> small <*> small <*> small
     ]
-    where small = abs <$> resize 10 arbitrary
+    where small = chooseInt (0, 3)
   shrink H = []
   shrink (I r l) = H : [I r' l' | (r', l') <- shrink (r, l), r' >= 0, l' >= 0]
   shrink (D r l l') = H : [D r' k k' | (r', k, k') <- shrink (r, l, l'), r' >= 0, k >= 0, k' >= 0]
