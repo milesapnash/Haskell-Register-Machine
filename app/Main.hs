@@ -16,21 +16,18 @@ main = do
     ["encode", file] -> encodeFile file
     ["decode", n]    -> case readMaybe n of
       Just num -> decodeNum num
-      Nothing  -> die ("not a valid integer: " ++ n)
+      Nothing  -> die ("error: not a valid integer: " ++ n)
     _                -> usage
 
 parseAndRun :: [String] -> Bool -> Int -> IO ()
 parseAndRun ("--trace" : rest) _ ms     = parseAndRun rest True ms
 parseAndRun ("--max-steps" : n : rest) t _ = case readMaybe n of
   Just ms -> parseAndRun rest t ms
-  Nothing -> die ("--max-steps: not a valid integer: " ++ n)
+  Nothing -> die ("error: --max-steps: not a valid integer: " ++ n)
 parseAndRun (file : regs) trace maxSteps = case mapM readMaybe regs of
   Just rs -> run trace maxSteps file rs
-  Nothing -> die "register values must be integers"
+  Nothing -> die "error: register values must be integers"
 parseAndRun _ _ _                          = usage
-
-die :: String -> IO a
-die msg = hPutStrLn stderr ("error: " ++ msg) >> exitFailure
 
 usage :: IO ()
 usage = do
