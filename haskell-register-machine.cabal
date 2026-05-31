@@ -4,6 +4,14 @@ version:       0.1.0.0
 synopsis:      A register machine simulator with program encoding/decoding
 license:       MIT
 
+executable rm-sim
+  main-is:        Main.hs
+  hs-source-dirs: app
+  build-depends:
+    base >= 4.14 && < 5,
+    haskell-register-machine
+  default-language: Haskell2010
+
 library
   exposed-modules:
     Pairing
