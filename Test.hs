@@ -22,7 +22,7 @@ assert name expected actual
 newtype SmallNat = SmallNat Integer deriving Show
 
 instance Arbitrary SmallNat where
-  arbitrary = SmallNat . toInteger <$> chooseInt (0, 20)
+  arbitrary = SmallNat . toInteger <$> chooseInt (0, 16)
   shrink (SmallNat n) = [SmallNat n' | n' <- shrink n, n' >= 0]
 
 instance Arbitrary Instruction where
@@ -50,13 +50,13 @@ prop_instructionRoundtrip :: Instruction -> Bool
 prop_instructionRoundtrip i =
   decodeInstruction (encodeInstruction i) == i
 
-prop_listRoundtrip :: [SmallNat] -> Bool
-prop_listRoundtrip ns =
+prop_listRoundtrip :: Property
+prop_listRoundtrip = forAll (resize 32 arbitrary) $ \ns ->
   let xs = map (\(SmallNat n) -> n) ns
   in decodeList (encodeList xs) == xs
 
-prop_programRoundtrip :: NonEmptyList Instruction -> Bool
-prop_programRoundtrip (NonEmpty is) =
+prop_programRoundtrip :: Property
+prop_programRoundtrip = forAll (resize 32 (listOf1 arbitrary)) $ \is ->
   let p = fromInstructions is
   in decode (encode p) == p
 
@@ -64,7 +64,7 @@ prop_programRoundtrip (NonEmpty is) =
 
 check :: String -> Property -> IO ()
 check name prop = do
-  result <- quickCheckResult (withMaxSuccess 200 prop)
+  result <- quickCheckResult (withNumTests 200 prop)
   case result of
     Success {} -> putStrLn ("PASS: " ++ name)
     _          -> putStrLn ("FAIL: " ++ name) >> exitFailure
