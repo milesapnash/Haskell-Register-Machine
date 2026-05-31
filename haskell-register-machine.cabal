@@ -7,6 +7,7 @@ license:       MIT
 library
   exposed-modules:
     Pairing
+    Parser
     Programs
     RegisterMachine
   build-depends:

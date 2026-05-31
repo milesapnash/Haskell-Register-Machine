@@ -2,6 +2,7 @@ module Main where
 
 import Pairing
 import Programs
+import Parser
 import RegisterMachine
 import System.Exit
 import Test.QuickCheck
@@ -98,6 +99,17 @@ prop_addition (SmallNat a) (SmallNat b) =
   in (result !! 1 === fromIntegral (a + b))
   .&&. (result !! 2 === 0)
 
+-- Parser properties
+
+prop_parseInstructionRoundtrip :: Instruction -> Bool
+prop_parseInstructionRoundtrip i =
+  parseInstruction (show i) == Right i
+
+prop_parseProgramRoundtrip :: Property
+prop_parseProgramRoundtrip = forAll (resize 10 (listOf1 arbitrary)) $ \is ->
+  let p = fromInstructions is
+  in parseProgram (show p) === Right p
+
 -- Runner
 
 check :: String -> Property -> IO ()
@@ -128,5 +140,9 @@ main = do
   check "decrement branches correctly" prop_decrementBranches
   check "inc then dec is identity"     prop_incDecIdentity
   check "addition program"             (property prop_addition)
+
+  -- Parser properties
+  check "parse instruction roundtrip"  (property prop_parseInstructionRoundtrip)
+  check "parse program roundtrip"      prop_parseProgramRoundtrip
 
   putStrLn "All tests passed."
