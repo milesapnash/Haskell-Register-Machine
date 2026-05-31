@@ -60,10 +60,12 @@ executeInstructionsTrace p@(Program xs) s
       l = head s
       x = xs ! l
 
-executeTrace :: Integer -> [Int] -> IO ()
-executeTrace p s = mapM_ print (executeInstructionsTrace d (checkState d s))
-  where
-    d = decode p
+executeTrace :: Integer -> [Int] -> [(Instruction, [Int])]
+executeTrace p s = executeInstructionsTrace d (checkState d s)
+  where d = decode p
+
+printTrace :: Integer -> [Int] -> IO ()
+printTrace p = mapM_ print . executeTrace p
 
 checkState :: Program -> [Int] -> [Int]
 checkState p s
