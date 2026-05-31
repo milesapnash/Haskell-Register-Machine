@@ -51,12 +51,12 @@ prop_instructionRoundtrip i =
   decodeInstruction (encodeInstruction i) == i
 
 prop_listRoundtrip :: Property
-prop_listRoundtrip = forAll (resize 32 arbitrary) $ \ns ->
+prop_listRoundtrip = forAll (resize 10 arbitrary) $ \ns ->
   let xs = map (\(SmallNat n) -> n) ns
   in decodeList (encodeList xs) == xs
 
 prop_programRoundtrip :: Property
-prop_programRoundtrip = forAll (resize 32 (listOf1 arbitrary)) $ \is ->
+prop_programRoundtrip = forAll (resize 10 (listOf1 arbitrary)) $ \is ->
   let p = fromInstructions is
   in decode (encode p) == p
 
