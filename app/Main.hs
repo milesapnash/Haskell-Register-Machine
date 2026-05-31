@@ -3,6 +3,7 @@ module Main where
 import System.Environment
 import System.Exit
 import System.IO
+import Text.Read (readMaybe)
 import Parser
 import Programs
 import RegisterMachine
@@ -13,14 +14,23 @@ main = do
   case args of
     ("run" : rest)   -> parseAndRun rest False 1000000
     ["encode", file] -> encodeFile file
-    ["decode", n]    -> decodeNum (read n)
+    ["decode", n]    -> case readMaybe n of
+      Just num -> decodeNum num
+      Nothing  -> die ("not a valid integer: " ++ n)
     _                -> usage
 
 parseAndRun :: [String] -> Bool -> Int -> IO ()
 parseAndRun ("--trace" : rest) _ ms     = parseAndRun rest True ms
-parseAndRun ("--max-steps" : n : rest) t _ = parseAndRun rest t (read n)
-parseAndRun (file : regs) trace maxSteps   = run trace maxSteps file (map read regs)
+parseAndRun ("--max-steps" : n : rest) t _ = case readMaybe n of
+  Just ms -> parseAndRun rest t ms
+  Nothing -> die ("--max-steps: not a valid integer: " ++ n)
+parseAndRun (file : regs) trace maxSteps = case mapM readMaybe regs of
+  Just rs -> run trace maxSteps file rs
+  Nothing -> die "register values must be integers"
 parseAndRun _ _ _                          = usage
+
+die :: String -> IO a
+die msg = hPutStrLn stderr ("error: " ++ msg) >> exitFailure
 
 usage :: IO ()
 usage = do
