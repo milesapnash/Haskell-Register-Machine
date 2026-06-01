@@ -1,7 +1,6 @@
 module Programs where
 
-import PairFunctions
-import Data.Foldable
+import Pairing
 import Data.Array
 
 data Instruction = H |
@@ -20,7 +19,7 @@ newtype Program = Program (Array Int Instruction)
 instance Show Program where
   show (Program a)
     | null a    = "NULL"
-    | otherwise = "PROGRAM:" ++ concatMap (\(i, l) -> "\nL" ++ show i ++ ":\t" ++ show l) (zip [0..] (toList a))
+    | otherwise = "PROGRAM:" ++ concatMap (\(i, l) -> "\nL" ++ show i ++ ":\t" ++ show l) (assocs a)
 
 decodeInstruction :: Integer -> Instruction
 decodeInstruction 0 = H
@@ -36,13 +35,14 @@ encodeInstruction H = 0
 encodeInstruction (I r l)   = encodeDoublePair (2 * fromIntegral r) (fromIntegral l)
 encodeInstruction (D r l l') = encodeDoublePair (2 * fromIntegral r + 1) (encodeSinglePair (fromIntegral l) (fromIntegral l'))
 
-fromInstructions :: [Instruction] -> Program
-fromInstructions is = Program (array bnds [(i, is !! i) | i <- range bnds])
-  where
-    bnds = (0, length is - 1)
+toInstructions :: Program -> [Instruction]
+toInstructions (Program a) = elems a
 
-noRegisters :: Program -> Int
-noRegisters (Program p) = 2 + foldr max 0 (fmap registers p)
+fromInstructions :: [Instruction] -> Program
+fromInstructions is = Program (listArray (0, length is - 1) is)
+
+numRegisters :: Program -> Int
+numRegisters (Program p) = 2 + foldr max 0 (fmap registers p)
   where
     registers H = 0
     registers (I r _) = r
